@@ -1,18 +1,17 @@
-# sons midi
-# simulation led + partition
-# upgrade python3
-# variables globales
-
-import pygame, sys, time
-import mido
+import sys, time
+import pygame, pygame.midi
 from pygame.locals import *
-import pygame.midi
+import mido
 
-def isOver(button, pos):
-	if pos[0] > button.x and pos[0] < button.x + button.width:
-		if pos[1] > button.y and pos[1] < button.y + button.height:
-			return True
-	return False
+# todo upgrade python3
+
+def highlightNote(note):
+	drawAllRectangles([note])
+	pygame.display.update()
+
+def hideNotes():
+	drawAllRectangles([])
+	pygame.display.update()
 
 def drawAllRectangles(toColorate):
 	DISPLAY.fill((255,255,255))
@@ -25,32 +24,47 @@ def drawAllRectangles(toColorate):
 		textSurface = font.render(GAMME[i], True, (0,0,0))
 		DISPLAY.blit(textSurface,(35 + i * 100,167))
 
+def playNote(note):
+	player.note_on(note, 127,1)
+	time.sleep(0.2)
+	player.note_off(note,127,1)
+	
 def showPartition():
 	mid = mido.MidiFile('simple_auclair_PNO.mid')
 	for msg in mid.play():
 		strmsg = str(msg)
 		if strmsg.startswith('note_on'):
 			currentNote = int(strmsg.split(" ")[2].split("=")[1]);
+			currentNoteInArray = (currentNote - 60) / 2
+
+			highlightNote(currentNoteInArray)
 			playNote(currentNote)
+			hideNotes()
 
-def playNote(note):
-	currentNoteInArray = (note - 60) / 2
+def learnPartition():
+	mid = mido.MidiFile('simple_auclair_PNO.mid')
+	for msg in mid.play():
+		strmsg = str(msg)
+		if strmsg.startswith('note_on'):
+			currentNote = int(strmsg.split(" ")[2].split("=")[1]);
+			currentNoteInArray = (currentNote - 60) / 2
+			highlightNote(currentNoteInArray)
 
-	player.note_on(note, 127,1)
-	drawAllRectangles([currentNoteInArray])
-	pygame.display.update()
-
-	time.sleep(0.2)
-
-	player.note_off(note,127,1)
-	drawAllRectangles([])
-	pygame.display.update()
+			noteFound=False
+			while not noteFound:
+				for event in pygame.event.get():
+					if event.type == pygame.KEYDOWN:
+						if event.key == pygame.K_SPACE:
+							playNote(currentNote)
+							noteFound=True
+							break
+			hideNotes()
 
 pygame.init()
 pygame.font.init()
 
 pygame.midi.init()
-player= pygame.midi.Output(0)
+player= pygame.midi.Output(0,0)
 
 font = pygame.font.Font(None, 25)
 
@@ -75,6 +89,6 @@ while True:
         		sys.exit()
         	elif event.key == pygame.K_q:
         		showPartition()
+    		elif event.key == pygame.K_w:
+        		learnPartition()
     pygame.display.update()
-
-
